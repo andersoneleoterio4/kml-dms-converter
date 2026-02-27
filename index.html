@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor KML - Graus para DMS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0f1419;
+            --bg-secondary: #1a2332;
+            --bg-card: #232f3e;
+            --accent: #00d4aa;
+            --accent-hover: #00f5c4;
+            --text-primary: #e8eaed;
+            --text-muted: #8b949e;
+            --border: #2d3a4a;
+            --success: #3fb950;
+            --error: #f85149;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0, 212, 170, 0.12), transparent),
+                radial-gradient(ellipse 60% 40% at 100% 100%, rgba(0, 212, 170, 0.06), transparent);
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        .upload-zone {
+            background: var(--bg-secondary);
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            text-align: center;
+            transition: all 0.25s ease;
+            cursor: pointer;
+            margin-bottom: 2rem;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: var(--accent);
+            background: rgba(0, 212, 170, 0.06);
+        }
+
+        .upload-zone input[type="file"] {
+            display: none;
+        }
+
+        .upload-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1rem;
+            background: var(--bg-card);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+
+        .upload-zone p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .upload-zone .hint {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .datum-option {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .datum-option label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .datum-option select {
+            width: 100%;
+            max-width: 360px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            padding: 0.6rem 0.75rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .datum-option select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .datum-option .help {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.4rem;
+        }
+
+        .html-txt-options {
+            margin-top: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .html-txt-options label {
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: block;
+            margin-bottom: 0.15rem;
+        }
+
+        .html-txt-options select {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.85rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .results-section {
+            display: none;
+            margin-top: 2rem;
+        }
+
+        .results-section.visible {
+            display: block;
+        }
+
+        .stats {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            flex: 1;
+            min-width: 140px;
+        }
+
+        .stat-card span {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-card strong {
+            font-size: 1.5rem;
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .stat-card.datum-badge strong {
+            font-size: 1.1rem;
+        }
+
+        .download-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 500;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--accent);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent);
+            background: rgba(0, 212, 170, 0.1);
+        }
+
+        .table-wrapper {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .table-title {
+            padding: 1rem 1.25rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: var(--bg-card);
+            color: var(--text-muted);
+            font-weight: 500;
+            text-align: center;
+            padding: 0.75rem 1rem;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        td {
+            padding: 0.65rem 1rem;
+            border-bottom: 1px solid var(--border);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        th, td {
+            border: 1px solid var(--border);
+        }
+
+        thead .header-main th {
+            background: #d0d3d8;
+            color: #111827;
+            text-align: center;
+        }
+
+        thead .header-sub th {
+            background: #e5e7eb;
+            color: #111827;
+            text-align: center;
+        }
+
+        .lat-header,
+        td.lat-cell {
+            background: #fff7da;
+        }
+
+        .lon-header,
+        td.lon-cell {
+            background: #e3f0ff;
+        }
+
+        tr:hover td {
+            background: rgba(0, 212, 170, 0.04);
+        }
+
+        .coord-lat { color: #58a6ff; }
+        .coord-lon { color: #d2a8ff; }
+
+        .message {
+            padding: 1rem 1.25rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .message.visible {
+            display: block;
+        }
+
+        .message.error {
+            background: rgba(248, 81, 73, 0.15);
+            border: 1px solid var(--error);
+            color: #ff7b72;
+        }
+
+        .message.success {
+            background: rgba(63, 185, 80, 0.15);
+            border: 1px solid var(--success);
+            color: #3fb950;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Conversor KML → DMS</h1>
+            <p class="subtitle">Converta coordenadas de Graus Decimais para Graus, Minutos e Segundos · <strong>DATUM: SIRGAS 2000</strong></p>
+        </header>
+
+        <div class="upload-zone" id="uploadZone">
+            <input type="file" id="fileInput" accept=".kml,.xml">
+            <div class="upload-icon">📁</div>
+            <p>Arraste um arquivo KML aqui ou clique para selecionar</p>
+            <p class="hint">Arquivos .kml ou .xml com coordenadas de poligonal</p>
+        </div>
+
+        <div class="datum-option">
+            <label for="sourceDatum">Datum de origem das coordenadas do KML</label>
+            <select id="sourceDatum">
+                <option value="SIRGAS2000">SIRGAS 2000 (já está no datum de saída)</option>
+                <option value="WGS84">WGS 84</option>
+                <option value="SAD69">SAD 69 (South American Datum 1969)</option>
+                <option value="CORREGO_ALEGRE">Córrego Alegre 1970-72</option>
+            </select>
+            <p class="help">Se as coordenadas estiverem em outro sistema, elas serão convertidas para SIRGAS 2000.</p>
+        </div>
+
+        <div class="message" id="message"></div>
+
+        <section class="results-section" id="resultsSection">
+            <div class="stats">
+                <div class="stat-card">
+                    <span>Pontos processados</span>
+                    <strong id="pointCount">0</strong>
+                </div>
+                <div class="stat-card datum-badge">
+                    <span>Sistema de referência</span>
+                    <strong>SIRGAS 2000</strong>
+                </div>
+            </div>
+
+            <div class="download-buttons">
+                <button class="btn btn-primary" id="downloadTxt" title="Baixar arquivo .txt (formato ANM)">
+                    ⬇ Baixar TXT
+                </button>
+                <button class="btn btn-secondary" id="downloadCsv" title="Baixar arquivo .csv">
+                    ⬇ Baixar CSV
+                </button>
+                <button class="btn btn-secondary" id="downloadXls" title="Baixar planilha Excel com formatação">
+                    ⬇ Baixar Excel
+                </button>
+                <button class="btn btn-secondary" id="downloadHtmlTxt" title="Baixar HTML da tabela em .txt">
+                    ⬇ Baixar HTML (.txt)
+                </button>
+            </div>
+
+            <div class="html-txt-options">
+                <div>
+                    <label for="htmlTxtFontSize">Tamanho da fonte (HTML .txt)</label>
+                    <select id="htmlTxtFontSize">
+                        <option value="10">10 px</option>
+                        <option value="11">11 px</option>
+                        <option value="12" selected>12 px</option>
+                        <option value="13">13 px</option>
+                        <option value="14">14 px</option>
+                        <option value="16">16 px</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="htmlTxtColumnsMode">Colunas (HTML .txt)</label>
+                    <select id="htmlTxtColumnsMode">
+                        <option value="full" selected>Completo (com vértices)</option>
+                        <option value="no-vertices">Somente coordenadas (sem vértices)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <div class="table-title">DESCRIÇÃO DA POLIGONAL · Sistema de referência: SIRGAS 2000</div>
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr class="header-main">
+                                <th rowspan="2">VÉRTICES</th>
+                                <th class="lat-header" colspan="5">LATITUDE</th>
+                                <th class="lon-header" colspan="5">LONGITUDE</th>
+                            </tr>
+                            <tr class="header-sub">
+                                <th class="lat-header">S/N</th>
+                                <th class="lat-header">°</th>
+                                <th class="lat-header">'</th>
+                                <th class="lat-header">"</th>
+                                <th class="lat-header">DCM</th>
+                                <th class="lon-header">E/W</th>
+                                <th class="lon-header">°</th>
+                                <th class="lon-header">'</th>
+                                <th class="lon-header">"</th>
+                                <th class="lon-header">DCM</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <p>Processamento feito no navegador. Nenhum dado é enviado a servidores.</p>
+<div>
+        <p>Produto by Reserva Mineral</p>
+        <p>Desenvolvido por Anderson Eleotério</p>
+        <p>Contato: (83) 98727-2181 · E-mail: projetoreservamineral@gmail.com</p>
+</div>
+    </footer>
+
+    <script>
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const sourceDatumSelect = document.getElementById('sourceDatum');
+        const messageEl = document.getElementById('message');
+        const resultsSection = document.getElementById('resultsSection');
+        const tableBody = document.getElementById('tableBody');
+        const pointCountEl = document.getElementById('pointCount');
+        const downloadTxtBtn = document.getElementById('downloadTxt');
+        const downloadCsvBtn = document.getElementById('downloadCsv');
+        const downloadXlsBtn = document.getElementById('downloadXls');
+        const downloadHtmlTxtBtn = document.getElementById('downloadHtmlTxt');
+        const htmlTxtFontSizeSelect = document.getElementById('htmlTxtFontSize');
+        const htmlTxtColumnsModeSelect = document.getElementById('htmlTxtColumnsMode');
+
+        let convertedData = [];
+        var lastSourceDatum = 'SIRGAS2000';
+
+        var ELLIPSOIDS = {
+            GRS80:    { a: 6378137, invF: 298.257222101 },
+            GRS67_SA: { a: 6378160, invF: 298.25 },
+            INTL24:   { a: 6378388, invF: 297 }
+        };
+
+        var DATUM_TRANSFORMS = {
+            SIRGAS2000:      { ellipsoid: 'GRS80',    dx: 0,    dy: 0,   dz: 0 },
+            WGS84:           { ellipsoid: 'GRS80',    dx: 0,    dy: 0,   dz: 0 },
+            SAD69:           { ellipsoid: 'GRS67_SA', dx: -67.35, dy: 3.88, dz: -38.22 },
+            CORREGO_ALEGRE:  { ellipsoid: 'INTL24',   dx: -206, dy: 172, dz: -6 }
+        };
+
+        function geodeticToGeocentric(latRad, lonRad, a, invF) {
+            var f = 1 / invF;
+            var e2 = 2 * f - f * f;
+            var sinLat = Math.sin(latRad);
+            var N = a / Math.sqrt(1 - e2 * sinLat * sinLat);
+            var cosLat = Math.cos(latRad);
+            return {
+                x: N * cosLat * Math.cos(lonRad),
+                y: N * cosLat * Math.sin(lonRad),
+                z: N * (1 - e2) * sinLat
+            };
+        }
+
+        function geocentricToGeodetic(x, y, z, a, invF) {
+            var f = 1 / invF;
+            var e2 = 2 * f - f * f;
+            var p = Math.sqrt(x * x + y * y);
+            var lon = Math.atan2(y, x);
+            var lat = Math.atan2(z, p * (1 - e2));
+            for (var i = 0; i < 5; i++) {
+                var sinLat = Math.sin(lat);
+                var N = a / Math.sqrt(1 - e2 * sinLat * sinLat);
+                lat = Math.atan2(z + e2 * N * sinLat, p);
+            }
+            return { lat: lat * 180 / Math.PI, lon: lon * 180 / Math.PI };
+        }
+
+        function convertToSIRGAS2000(latDeg, lonDeg, sourceDatum) {
+            var t = DATUM_TRANSFORMS[sourceDatum];
+            if (!t || (t.dx === 0 && t.dy === 0 && t.dz === 0)) {
+                return { lat: latDeg, lon: lonDeg };
+            }
+            var ell = ELLIPSOIDS[t.ellipsoid];
+            var targetEll = ELLIPSOIDS.GRS80;
+            var latRad = latDeg * Math.PI / 180;
+            var lonRad = lonDeg * Math.PI / 180;
+            var g = geodeticToGeocentric(latRad, lonRad, ell.a, ell.invF);
+            var x2 = g.x + t.dx;
+            var y2 = g.y + t.dy;
+            var z2 = g.z + t.dz;
+            return geocentricToGeodetic(x2, y2, z2, targetEll.a, targetEll.invF);
+        }
+
+        function showMessage(text, type) {
+            messageEl.textContent = text;
+            messageEl.className = 'message visible ' + type;
+        }
+
+        function hideMessage() {
+            messageEl.className = 'message';
+        }
+
+        function decimalToDMS(decimal) {
+            const sign = decimal < 0 ? -1 : 1;
+            const abs = Math.abs(decimal);
+            const degrees = Math.floor(abs);
+            const minutesFloat = (abs - degrees) * 60;
+            const minutes = Math.floor(minutesFloat);
+            const seconds = ((minutesFloat - minutes) * 60);
+            return {
+                degrees: degrees * sign,
+                minutes,
+                seconds: Math.round(seconds * 1000) / 1000
+            };
+        }
+
+        function formatDMS(dms, isLatitude) {
+            const dir = isLatitude 
+                ? (dms.degrees >= 0 ? 'N' : 'S')
+                : (dms.degrees >= 0 ? 'E' : 'W');
+            const d = Math.abs(dms.degrees);
+            const m = dms.minutes;
+            const s = dms.seconds;
+            return d + '° ' + m + "' " + s + '" ' + dir;
+        }
+
+        function padNumber(value, width) {
+            var v = Math.floor(Math.abs(value));
+            var s = String(v);
+            while (s.length < width) s = '0' + s;
+            return s;
+        }
+
+        function splitDmsParts(decimal) {
+            var dms = decimalToDMS(decimal);
+            var deg = Math.abs(dms.degrees);
+            var min = dms.minutes;
+            var secFloat = dms.seconds;
+            var secInt = Math.floor(secFloat);
+            var dcm = Math.round((secFloat - secInt) * 1000);
+            if (dcm === 1000) {
+                dcm = 0;
+                secInt += 1;
+            }
+            return {
+                sign: decimal < 0 ? -1 : 1,
+                deg: deg,
+                min: min,
+                sec: secInt,
+                dcm: dcm
+            };
+        }
+
+        function parseKMLCoordinates(text) {
+            const coords = [];
+            const regex = /<coordinates>([\s\S]*?)<\/coordinates>/gi;
+            let match;
+            while ((match = regex.exec(text)) !== null) {
+                const coordBlock = match[1].trim();
+                const pairs = coordBlock.split(/[\s,]+/).filter(Boolean);
+                for (let i = 0; i < pairs.length; i += 3) {
+                    const lon = parseFloat(pairs[i]);
+                    const lat = parseFloat(pairs[i + 1]);
+                    if (!isNaN(lat) && !isNaN(lon)) {
+                        coords.push({ lat, lon });
+                    }
+                }
+            }
+            if (coords.length === 0) {
+                const fallback = /(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)/g;
+                let m;
+                while ((m = fallback.exec(text)) !== null) {
+                    const lon = parseFloat(m[1]);
+                    const lat = parseFloat(m[2]);
+                    if (!isNaN(lat) && !isNaN(lon)) {
+                        coords.push({ lat, lon });
+                    }
+                }
+            }
+            return coords;
+        }
+
+        function processFile(file) {
+            hideMessage();
+            var sourceDatum = sourceDatumSelect.value;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const text = e.target.result;
+                const rawCoords = parseKMLCoordinates(text);
+                if (rawCoords.length === 0) {
+                    showMessage('Nenhuma coordenada encontrada no arquivo KML. Verifique o formato.', 'error');
+                    resultsSection.classList.remove('visible');
+                    return;
+                }
+                convertedData = rawCoords.map(function (c, i) {
+                    var sirgas = convertToSIRGAS2000(c.lat, c.lon, sourceDatum);
+                    const latDMS = decimalToDMS(sirgas.lat);
+                    const lonDMS = decimalToDMS(sirgas.lon);
+                    return {
+                        index: i + 1,
+                        latDMS: formatDMS(latDMS, true),
+                        lonDMS: formatDMS(lonDMS, false),
+                        latDecimal: sirgas.lat,
+                        lonDecimal: sirgas.lon
+                    };
+                });
+                renderTable();
+                pointCountEl.textContent = convertedData.length;
+                resultsSection.classList.add('visible');
+                lastSourceDatum = sourceDatum;
+                var convNote = sourceDatum !== 'SIRGAS2000' && sourceDatum !== 'WGS84'
+                    ? ' Convertidas de ' + (sourceDatum === 'SAD69' ? 'SAD 69' : 'Córrego Alegre 1970-72') + ' para SIRGAS 2000.'
+                    : '';
+                showMessage(convertedData.length + ' coordenada(s) convertida(s) com sucesso.' + convNote, 'success');
+            };
+            reader.onerror = function () { showMessage('Erro ao ler o arquivo.', 'error'); };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function renderTable() {
+            if (!convertedData.length) {
+                tableBody.innerHTML = '';
+                return;
+            }
+            var n = convertedData.length;
+            var rowsHtml = [];
+
+            function buildRow(label, latDec, lonDec) {
+                var lat = splitDmsParts(latDec);
+                var lon = splitDmsParts(lonDec);
+                var latHem = latDec < 0 ? '-S' : 'N';
+                var lonHem = lonDec < 0 ? '-W' : 'E';
+                return '<tr>'
+                    + '<td>' + label + '</td>'
+                    + '<td class="lat-cell">' + latHem + '</td>'
+                    + '<td class="lat-cell">' + padNumber(lat.deg, 3) + '</td>'
+                    + '<td class="lat-cell">' + padNumber(lat.min, 2) + '</td>'
+                    + '<td class="lat-cell">' + padNumber(lat.sec, 2) + '</td>'
+                    + '<td class="lat-cell">' + padNumber(lat.dcm, 3) + '</td>'
+                    + '<td class="lon-cell">' + lonHem + '</td>'
+                    + '<td class="lon-cell">' + padNumber(lon.deg, 3) + '</td>'
+                    + '<td class="lon-cell">' + padNumber(lon.min, 2) + '</td>'
+                    + '<td class="lon-cell">' + padNumber(lon.sec, 2) + '</td>'
+                    + '<td class="lon-cell">' + padNumber(lon.dcm, 3) + '</td>'
+                    + '</tr>';
+            }
+
+            for (var i = 0; i < n; i++) {
+                var label = 'V' + (i + 1);
+                var p = convertedData[i];
+                rowsHtml.push(buildRow(label, p.latDecimal, p.lonDecimal));
+            }
+
+            tableBody.innerHTML = rowsHtml.join('');
+        }
+
+        function generateTxtContent() {
+            if (!convertedData.length) return '';
+            var lines = [];
+
+            function buildLine(latDec, lonDec) {
+                var lat = splitDmsParts(latDec);
+                var lon = splitDmsParts(lonDec);
+                var latSign = latDec < 0 ? '-' : '+';
+                var lonSign = lonDec < 0 ? '-' : '+';
+                return [
+                    latSign,
+                    padNumber(lat.deg, 3),
+                    padNumber(lat.min, 2),
+                    padNumber(lat.sec, 2),
+                    padNumber(lat.dcm, 3),
+                    lonSign,
+                    padNumber(lon.deg, 3),
+                    padNumber(lon.min, 2),
+                    padNumber(lon.sec, 2),
+                    padNumber(lon.dcm, 3)
+                ].join(';');
+            }
+
+            for (var i = 0; i < convertedData.length; i++) {
+                var p = convertedData[i];
+                lines.push(buildLine(p.latDecimal, p.lonDecimal));
+            }
+
+            return lines.join('\r\n');
+        }
+
+        function generateCsvContent() {
+            var lines = [];
+            var datumRow = '"Sistema de referência (DATUM) de saída","SIRGAS 2000"';
+            lines.push(datumRow);
+            if (lastSourceDatum !== 'SIRGAS2000' && lastSourceDatum !== 'WGS84') {
+                lines.push('"Datum de origem convertido","' + (lastSourceDatum === 'SAD69' ? 'SAD 69' : 'Córrego Alegre 1970-72') + '"');
+            }
+            lines.push('');
+
+            lines.push([
+                '"VÉRTICES"',
+                '"LAT_S/N"',
+                '"LAT_°"',
+                '"LAT_\'"',
+                '"LAT_\""',
+                '"LAT_DCM"',
+                '"LON_E/W"',
+                '"LON_°"',
+                '"LON_\'"',
+                '"LON_\""',
+                '"LON_DCM"'
+            ].join(','));
+
+            var n = convertedData.length;
+            if (!n) return lines.join('\r\n');
+
+            function buildRow(label, latDec, lonDec) {
+                var lat = splitDmsParts(latDec);
+                var lon = splitDmsParts(lonDec);
+                var latHem = latDec < 0 ? '-S' : 'N';
+                var lonHem = lonDec < 0 ? '-W' : 'E';
+                return [
+                    '"' + label + '"',
+                    '"' + latHem + '"',
+                    padNumber(lat.deg, 3),
+                    padNumber(lat.min, 2),
+                    padNumber(lat.sec, 2),
+                    padNumber(lat.dcm, 3),
+                    '"' + lonHem + '"',
+                    padNumber(lon.deg, 3),
+                    padNumber(lon.min, 2),
+                    padNumber(lon.sec, 2),
+                    padNumber(lon.dcm, 3)
+                ].join(',');
+            }
+
+            for (var i = 0; i < n; i++) {
+                var label = 'V' + (i + 1);
+                var p = convertedData[i];
+                lines.push(buildRow(label, p.latDecimal, p.lonDecimal));
+            }
+
+            return lines.join('\r\n');
+        }
+
+        function downloadFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function generateExcelHtml() {
+            if (!convertedData.length) return '';
+            var n = convertedData.length;
+            function buildRow(label, latDec, lonDec) {
+                var lat = splitDmsParts(latDec);
+                var lon = splitDmsParts(lonDec);
+                var latHem = latDec < 0 ? '-S' : 'N';
+                var lonHem = lonDec < 0 ? '-W' : 'E';
+                var xlNum = ' style="mso-number-format:\'@\'"';
+                return '<tr>'
+                    + '<td>' + label + '</td>'
+                    + '<td class="lat-cell"' + xlNum + '>' + latHem + '</td>'
+                    + '<td class="lat-cell xl-num"' + xlNum + '>' + padNumber(lat.deg, 3) + '</td>'
+                    + '<td class="lat-cell xl-num"' + xlNum + '>' + padNumber(lat.min, 2) + '</td>'
+                    + '<td class="lat-cell xl-num"' + xlNum + '>' + padNumber(lat.sec, 2) + '</td>'
+                    + '<td class="lat-cell xl-num"' + xlNum + '>' + padNumber(lat.dcm, 3) + '</td>'
+                    + '<td class="lon-cell"' + xlNum + '>' + lonHem + '</td>'
+                    + '<td class="lon-cell xl-num"' + xlNum + '>' + padNumber(lon.deg, 3) + '</td>'
+                    + '<td class="lon-cell xl-num"' + xlNum + '>' + padNumber(lon.min, 2) + '</td>'
+                    + '<td class="lon-cell xl-num"' + xlNum + '>' + padNumber(lon.sec, 2) + '</td>'
+                    + '<td class="lon-cell xl-num"' + xlNum + '>' + padNumber(lon.dcm, 3) + '</td>'
+                    + '</tr>';
+            }
+            function vertexLabel(i) {
+                if (i < n - 1) return 'V' + (i + 1) + '-V' + (i + 2);
+                return 'V' + (n - 1) + '-V' + n + '=PA';
+            }
+            var rowsHtml = [];
+            for (var i = 0; i < n; i++) {
+                var p = convertedData[i];
+                rowsHtml.push(buildRow(vertexLabel(i), p.latDecimal, p.lonDecimal));
+            }
+            var tbody = '<thead>'
+                + '<tr class="header-main"><th rowspan="2">VÉRTICES</th><th class="lat-header" colspan="5">LATITUDE</th><th class="lon-header" colspan="5">LONGITUDE</th></tr>'
+                + '<tr class="header-sub">'
+                + '<th class="lat-header">S/N</th><th class="lat-header">°</th><th class="lat-header">\'</th><th class="lat-header">"</th><th class="lat-header">DCM</th>'
+                + '<th class="lon-header">E/W</th><th class="lon-header">°</th><th class="lon-header">\'</th><th class="lon-header">"</th><th class="lon-header">DCM</th>'
+                + '</tr></thead><tbody>' + rowsHtml.join('') + '</tbody>';
+            var styles = ''
+                + '<style>'
+                + 'table{border-collapse:collapse;font-size:11pt;}'
+                + 'th,td{border:1px solid #2d3a4a;text-align:center;padding:4px;}'
+                + 'td{font-family:\'JetBrains Mono\',Consolas,monospace;}'
+                + '.xl-num{mso-number-format:\'@\';}'
+                + 'thead .header-main th{background:#d0d3d8;color:#111827;}'
+                + 'thead .header-sub th{background:#e5e7eb;color:#111827;}'
+                + '.lat-header,td.lat-cell{background:#fff7da;}'
+                + '.lon-header,td.lon-cell{background:#e3f0ff;}'
+                + '</style>';
+            var html = '<html><head><meta charset="UTF-8">' + styles + '</head><body><table>' + tbody + '</table></body></html>';
+            return html;
+        }
+
+        function generateTableHtmlTxt() {
+            if (!convertedData.length) return '';
+            var baseTable = document.querySelector('.table-scroll table');
+            if (!baseTable) return '';
+            var table = baseTable.cloneNode(true);
+            var mode = htmlTxtColumnsModeSelect ? htmlTxtColumnsModeSelect.value : 'full';
+            if (mode === 'no-vertices') {
+                if (table.tHead && table.tHead.rows.length > 0 && table.tHead.rows[0].cells.length > 0) {
+                    table.tHead.rows[0].deleteCell(0);
+                }
+                if (table.tBodies.length > 0) {
+                    var bodyRows = table.tBodies[0].rows;
+                    for (var i = 0; i < bodyRows.length; i++) {
+                        if (bodyRows[i].cells.length > 0) {
+                            bodyRows[i].deleteCell(0);
+                        }
+                    }
+                }
+            }
+            var fontSize = parseInt(htmlTxtFontSizeSelect && htmlTxtFontSizeSelect.value, 10) || 12;
+            var styles = ''
+                + '<style>'
+                + 'table{border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;font-size:' + fontSize + 'px;}'
+                + 'th,td{border:1px solid #000;text-align:center;padding:4px;}'
+                + '.lat-header,td.lat-cell{background:#fff7da;}'
+                + '.lon-header,td.lon-cell{background:#e3f0ff;}'
+                + '</style>';
+            var html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' + styles + '</head><body>' +
+                table.outerHTML +
+                '</body></html>';
+            return html;
+        }
+
+        uploadZone.addEventListener('click', function () { fileInput.click(); });
+
+        uploadZone.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', function () {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', function (e) {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && (file.name.endsWith('.kml') || file.name.endsWith('.xml'))) {
+                processFile(file);
+            } else {
+                showMessage('Por favor, selecione um arquivo .kml ou .xml', 'error');
+            }
+        });
+
+        fileInput.addEventListener('change', function () {
+            const file = fileInput.files[0];
+            if (file) processFile(file);
+        });
+
+        downloadTxtBtn.addEventListener('click', function () {
+            if (convertedData.length === 0) return;
+            downloadFile(generateTxtContent(), 'coordenadas_dms.txt', 'text/plain;charset=utf-8');
+        });
+
+        downloadCsvBtn.addEventListener('click', function () {
+            if (convertedData.length === 0) return;
+            downloadFile(generateCsvContent(), 'coordenadas_dms.csv', 'text/csv;charset=utf-8');
+        });
+
+        downloadXlsBtn.addEventListener('click', function () {
+            if (convertedData.length === 0) return;
+            var html = generateExcelHtml();
+            if (!html) return;
+            downloadFile(html, 'coordenadas_poligonal.xls', 'application/vnd.ms-excel;charset=utf-8');
+        });
+
+        downloadHtmlTxtBtn.addEventListener('click', function () {
+            if (convertedData.length === 0) return;
+            var html = generateTableHtmlTxt();
+            if (!html) return;
+            downloadFile(html, 'tabela_poligonal.html.txt', 'text/plain;charset=utf-8');
+        });
+    </script>
+</body>
+</html>
